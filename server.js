@@ -639,6 +639,23 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'DELETE') {
+    if (pathname === '/api/cards') {
+      const cardId = String(parsed.query?.id || '');
+      if (!cardId) {
+        return sendJson(400, { error: 'Card ID required' });
+      }
+      const cards = readAllCards();
+      const filtered = cards.filter(c => String(c.id) !== cardId);
+      if (filtered.length === cards.length) {
+        return sendJson(404, { error: 'Card not found' });
+      }
+      writeCsv(filtered);
+      return sendJson(200, { success: true, deleted_id: cardId });
+    }
+    return sendJson(404, { error: 'Not found' });
+  }
+
   res.writeHead(405);
   res.end();
 });

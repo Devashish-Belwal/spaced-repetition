@@ -216,6 +216,7 @@
 
     // AI Chat Modal & Card Buttons
     btnCardAiHeader: document.getElementById('btn-card-ai-header'),
+    btnDeleteCardHeader: document.getElementById('btn-delete-card-header'),
     btnCardChat: document.getElementById('btn-card-chat'),
     aiChatModal: document.getElementById('ai-chat-modal'),
     aiModalCloseBtn: document.getElementById('ai-modal-close-btn'),
@@ -2402,6 +2403,63 @@ Format your response strictly as follows:
     }
   }
 
+  // --- DELETE CURRENT CARD ---
+  async function deleteCurrentCard() {
+    const card = getCurrentCard();
+    if (!card) return;
+
+    const shortQ = (card.question || '').slice(0, 60);
+    const confirmMsg = `Are you sure you want to permanently delete Card #${card.id}?\n\n"${shortQ}..."`;
+    if (!confirm(confirmMsg)) return;
+
+    const targetId = String(card.id);
+
+    // 1. If server / Neon connected, call DELETE /api/cards
+    if (isServerConnected) {
+      try {
+        await fetch(`/api/cards?id=${targetId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: targetId })
+        });
+      } catch (err) {
+        console.warn('Failed deleting card on server:', err);
+      }
+    }
+
+    // 2. Remove from allCards
+    allCards = allCards.filter(c => String(c.id) !== targetId);
+
+    // 3. Remove from custom cards in localStorage
+    try {
+      const customStored = localStorage.getItem('flashsrs_custom_cards');
+      if (customStored) {
+        const customCards = JSON.parse(customStored).filter(c => String(c.id) !== targetId);
+        localStorage.setItem('flashsrs_custom_cards', JSON.stringify(customCards));
+      }
+    } catch (e) {}
+
+    // 4. Remove from progress map in localStorage
+    try {
+      const progressStored = localStorage.getItem('flashsrs_progress_map');
+      if (progressStored) {
+        const pMap = JSON.parse(progressStored);
+        delete pMap[targetId];
+        localStorage.setItem('flashsrs_progress_map', JSON.stringify(pMap));
+      }
+    } catch (e) {}
+
+    // 5. Update filteredCards and render next card
+    filteredCards = filteredCards.filter(c => String(c.id) !== targetId);
+    if (currentIndex >= filteredCards.length) {
+      currentIndex = Math.max(0, filteredCards.length - 1);
+    }
+
+    renderCurrentCard();
+    updateFilterStats();
+    showToast(`🗑️ Successfully deleted Card #${targetId}`);
+  }
+
   // --- EXPORT CSV ---
   function downloadCsv() {
     const fieldnames = ['id', 'category', 'level', 'question', 'answer', 'explanation', 'reps', 'interval_mins', 'ease_factor', 'due_date', 'last_reviewed', 'last_rating', 'state'];
@@ -2884,6 +2942,7 @@ Format your response strictly as follows:
     // AI Chat Modal & Card Buttons
     if (els.btnCardChat) els.btnCardChat.addEventListener('click', openAiChatModal);
     if (els.btnCardAiHeader) els.btnCardAiHeader.addEventListener('click', openAiChatModal);
+    if (els.btnDeleteCardHeader) els.btnDeleteCardHeader.addEventListener('click', deleteCurrentCard);
     if (els.aiModalCloseBtn) els.aiModalCloseBtn.addEventListener('click', closeAiChatModal);
     if (els.aiChatModal) {
       els.aiChatModal.addEventListener('click', (e) => {

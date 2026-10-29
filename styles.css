@@ -1380,6 +1380,29 @@ select:focus, input:focus {
   transform: translateY(-1px);
 }
 
+.btn-card-delete-header {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.btn-card-delete-header:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .btn-ai-chat {
   background-color: rgba(139, 92, 246, 0.16) !important;
   border: 1px solid rgba(139, 92, 246, 0.45) !important;

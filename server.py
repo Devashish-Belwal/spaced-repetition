@@ -569,6 +569,30 @@ class SRSRequestHandler(SimpleHTTPRequestHandler):
 
         self.send_json_response(404, {"error": "Not Found"})
 
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+
+        if path == '/api/cards':
+            card_ids = query.get('id', [])
+            card_id = card_ids[0] if card_ids else None
+            if not card_id:
+                self.send_json_response(400, {"error": "Card ID required"})
+                return
+
+            cards = read_all_cards()
+            filtered = [c for c in cards if str(c.get('id')) != str(card_id)]
+            if len(filtered) == len(cards):
+                self.send_json_response(404, {"error": "Card not found"})
+                return
+
+            write_csv(filtered)
+            self.send_json_response(200, {"success": True, "deleted_id": card_id})
+            return
+
+        self.send_json_response(404, {"error": "Not Found"})
+
     def send_json_response(self, status_code, data):
         payload = json.dumps(data).encode('utf-8')
         self.send_response(status_code)
