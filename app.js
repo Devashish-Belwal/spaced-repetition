@@ -2429,7 +2429,7 @@ Format your response strictly as follows:
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function (evt) {
+    reader.onload = async function (evt) {
       try {
         const text = evt.target.result;
         const importedCards = parseCsvText(text);
@@ -2438,48 +2438,122 @@ Format your response strictly as follows:
           return;
         }
 
-        const importedMap = {};
-        importedCards.forEach(c => {
-          if (c.id) importedMap[String(c.id)] = c;
+        // 1. If running locally with PC server connected:
+        if (isServerConnected) {
+          showToast('Syncing imported cards and progress to local data.csv...');
+          try {
+            const res = await fetch('/api/import', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cards: importedCards })
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              // Reload all cards fresh from server
+              const cRes = await fetch('/api/cards');
+              if (cRes.ok) {
+                allCards = await cRes.json();
+                populateCategoryDropdown();
+                applyFilters();
+                updateOverallStats();
+                showToast(`✓ Synced: ${data.new_count} new card(s) added & ${data.updated_count} reviews updated in data.csv!`);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('Server import failed, falling back to local merge:', err);
+          }
+        }
+
+        // 2. Fallback / Cloud / Browser mode:
+        const existingMap = new Map();
+        const existingQMap = new Map();
+        let maxId = 0;
+        allCards.forEach(c => {
+          const cid = parseInt(c.id, 10);
+          if (!isNaN(cid) && cid > maxId) maxId = cid;
+          existingMap.set(String(c.id), c);
+          if (c.question) existingQMap.set(c.question.trim().toLowerCase(), c);
         });
 
         let updatedCount = 0;
+        let newCount = 0;
         let progressMap = {};
         const stored = localStorage.getItem('flashsrs_progress_map');
         if (stored) {
           try { progressMap = JSON.parse(stored); } catch (e) {}
         }
 
-        allCards.forEach(c => {
-          const imp = importedMap[String(c.id)];
-          if (imp) {
-            c.reps = imp.reps !== undefined ? imp.reps : c.reps;
-            c.interval_mins = imp.interval_mins !== undefined ? imp.interval_mins : c.interval_mins;
-            c.ease_factor = imp.ease_factor !== undefined ? imp.ease_factor : c.ease_factor;
-            c.due_date = imp.due_date || c.due_date;
-            c.last_reviewed = imp.last_reviewed || c.last_reviewed;
-            c.last_rating = imp.last_rating || c.last_rating;
-            c.state = imp.state || c.state;
+        const newCustomCards = [];
 
-            if (parseInt(c.reps) > 0 || c.last_reviewed) {
-              progressMap[String(c.id)] = {
-                reps: c.reps,
-                interval_mins: c.interval_mins,
-                ease_factor: c.ease_factor,
-                due_date: c.due_date,
-                last_reviewed: c.last_reviewed,
-                last_rating: c.last_rating,
-                state: c.state
+        importedCards.forEach(imp => {
+          if (!imp.question || !imp.answer) return;
+
+          const match = existingMap.get(String(imp.id)) || existingQMap.get((imp.question || '').trim().toLowerCase());
+          if (match) {
+            match.reps = imp.reps !== undefined ? imp.reps : match.reps;
+            match.interval_mins = imp.interval_mins !== undefined ? imp.interval_mins : match.interval_mins;
+            match.ease_factor = imp.ease_factor !== undefined ? imp.ease_factor : match.ease_factor;
+            match.due_date = imp.due_date || match.due_date;
+            match.last_reviewed = imp.last_reviewed || match.last_reviewed;
+            match.last_rating = imp.last_rating || match.last_rating;
+            match.state = imp.state || match.state;
+
+            if (parseInt(match.reps) > 0 || match.last_reviewed) {
+              progressMap[String(match.id)] = {
+                reps: match.reps,
+                interval_mins: match.interval_mins,
+                ease_factor: match.ease_factor,
+                due_date: match.due_date,
+                last_reviewed: match.last_reviewed,
+                last_rating: match.last_rating,
+                state: match.state
               };
               updatedCount++;
             }
+          } else {
+            // New card
+            maxId++;
+            const newCard = {
+              id: String(maxId),
+              category: imp.category || 'General',
+              level: imp.level || 'Intermediate',
+              question: imp.question.trim(),
+              answer: imp.answer.trim(),
+              explanation: (imp.explanation || '').trim(),
+              reps: imp.reps || '0',
+              interval_mins: imp.interval_mins || '0',
+              ease_factor: imp.ease_factor || '2.5',
+              due_date: imp.due_date || new Date().toISOString(),
+              last_reviewed: imp.last_reviewed || '',
+              last_rating: imp.last_rating || '',
+              state: imp.state || 'new'
+            };
+            allCards.push(newCard);
+            existingMap.set(newCard.id, newCard);
+            existingQMap.set(newCard.question.toLowerCase(), newCard);
+            newCustomCards.push(newCard);
+            newCount++;
           }
         });
 
         localStorage.setItem('flashsrs_progress_map', JSON.stringify(progressMap));
+
+        if (newCustomCards.length > 0) {
+          let customCards = [];
+          const customStored = localStorage.getItem('flashsrs_custom_cards');
+          if (customStored) {
+            try { customCards = JSON.parse(customStored); } catch (e) {}
+          }
+          customCards.push(...newCustomCards);
+          localStorage.setItem('flashsrs_custom_cards', JSON.stringify(customCards));
+        }
+
+        populateCategoryDropdown();
         applyFilters();
-        updateFilterStats();
-        showToast(`✓ Successfully imported progress for ${updatedCount} flashcard(s)!`);
+        updateOverallStats();
+        showToast(`✓ Synced: ${newCount} new card(s) added & ${updatedCount} reviews updated!`);
       } catch (err) {
         console.error('Error importing CSV:', err);
         showToast('Error importing CSV: ' + err.message);

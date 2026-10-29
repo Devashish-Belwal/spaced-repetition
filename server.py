@@ -454,6 +454,95 @@ class SRSRequestHandler(SimpleHTTPRequestHandler):
             self.send_json_response(201, {"success": True, "card": new_card})
             return
 
+        if path == '/api/import':
+            incoming_cards = data.get('cards', [])
+            if not isinstance(incoming_cards, list) or len(incoming_cards) == 0:
+                self.send_json_response(400, {"error": "No cards provided"})
+                return
+
+            cards = read_all_cards()
+            card_map = {str(c.get('id')): c for c in cards}
+            question_map = {c.get('question', '').strip().lower(): c for c in cards if c.get('question')}
+            max_id = 0
+            for c in cards:
+                try:
+                    cid = int(c.get('id', 0))
+                    if cid > max_id:
+                        max_id = cid
+                except ValueError:
+                    pass
+
+            updated_count = 0
+            new_count = 0
+            now_iso = datetime.now(timezone.utc).isoformat()
+
+            for inc in incoming_cards:
+                q = (inc.get('question') or '').strip()
+                a = (inc.get('answer') or '').strip()
+                if not q or not a:
+                    continue
+
+                existing = card_map.get(str(inc.get('id'))) or question_map.get(q.lower())
+                if existing:
+                    if 'reps' in inc: existing['reps'] = inc['reps']
+                    if 'interval_mins' in inc: existing['interval_mins'] = inc['interval_mins']
+                    if 'ease_factor' in inc: existing['ease_factor'] = inc['ease_factor']
+                    if 'due_date' in inc: existing['due_date'] = inc['due_date']
+                    if 'last_reviewed' in inc: existing['last_reviewed'] = inc['last_reviewed']
+                    if 'last_rating' in inc: existing['last_rating'] = inc['last_rating']
+                    if 'state' in inc: existing['state'] = inc['state']
+                    updated_count += 1
+                else:
+                    max_id += 1
+                    category = (inc.get('category') or 'General').strip() or 'General'
+                    level_raw = (inc.get('level') or 'Intermediate').strip()
+                    level = level_raw.capitalize() if level_raw else 'Intermediate'
+                    new_card = {
+                        "id": str(max_id),
+                        "category": category,
+                        "level": level,
+                        "question": q,
+                        "answer": a,
+                        "explanation": (inc.get('explanation') or '').strip(),
+                        "reps": inc.get('reps', '0'),
+                        "interval_mins": inc.get('interval_mins', '0'),
+                        "ease_factor": inc.get('ease_factor', '2.5'),
+                        "due_date": inc.get('due_date', now_iso),
+                        "last_reviewed": inc.get('last_reviewed', ''),
+                        "last_rating": inc.get('last_rating', ''),
+                        "state": inc.get('state', 'new')
+                    }
+                    cards.append(new_card)
+                    card_map[new_card['id']] = new_card
+                    question_map[q.lower()] = new_card
+                    new_count += 1
+
+                    try:
+                        cat_dir = os.path.join(DATA_DIR, category)
+                        os.makedirs(cat_dir, exist_ok=True)
+                        md_file = os.path.join(cat_dir, f"{level}.md")
+                        q_num = 1
+                        if os.path.exists(md_file):
+                            with open(md_file, 'r', encoding='utf-8') as f:
+                                existing_text = f.read()
+                            matches = re.findall(r'^(?:#{1,4}\s+|\d+\.\s+)', existing_text, re.MULTILINE)
+                            if matches:
+                                q_num = len(matches) + 1
+                        md_entry = f"\n\n{q_num}. {new_card['question']}\n\n**Deep explanation:** {new_card['explanation']}\n\n**Interview answer:** {new_card['answer']}\n"
+                        with open(md_file, 'a', encoding='utf-8') as f:
+                            f.write(md_entry)
+                    except Exception as err:
+                        print(f"[Warning] Could not append to markdown file during import: {err}")
+
+            write_csv(cards)
+            self.send_json_response(200, {
+                "success": True,
+                "new_count": new_count,
+                "updated_count": updated_count,
+                "total_cards": len(cards)
+            })
+            return
+
         if path == '/api/settings':
             save_settings(data)
             self.send_json_response(200, {"success": True, "settings": data})

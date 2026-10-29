@@ -509,6 +509,98 @@ const server = http.createServer((req, res) => {
         return sendJson(201, { success: true, card: newCard });
       }
 
+      if (pathname === '/api/import') {
+        const incomingCards = Array.isArray(data.cards) ? data.cards : [];
+        if (incomingCards.length === 0) {
+          return sendJson(400, { error: 'No cards provided' });
+        }
+
+        const cards = readAllCards();
+        const cardMap = new Map();
+        const questionMap = new Map();
+        let maxId = 0;
+
+        for (const c of cards) {
+          const cid = parseInt(c.id, 10);
+          if (!isNaN(cid) && cid > maxId) maxId = cid;
+          cardMap.set(String(c.id), c);
+          if (c.question) questionMap.set(c.question.trim().toLowerCase(), c);
+        }
+
+        let updatedCount = 0;
+        let newCount = 0;
+        const nowIso = new Date().toISOString();
+
+        for (const inc of incomingCards) {
+          if (!inc.question || !inc.answer) continue;
+
+          // Match by ID or by exact question text
+          const existing = cardMap.get(String(inc.id)) || questionMap.get(inc.question.trim().toLowerCase());
+          if (existing) {
+            existing.reps = inc.reps !== undefined ? inc.reps : existing.reps;
+            existing.interval_mins = inc.interval_mins !== undefined ? inc.interval_mins : existing.interval_mins;
+            existing.ease_factor = inc.ease_factor !== undefined ? inc.ease_factor : existing.ease_factor;
+            existing.due_date = inc.due_date || existing.due_date;
+            existing.last_reviewed = inc.last_reviewed || existing.last_reviewed;
+            existing.last_rating = inc.last_rating || existing.last_rating;
+            existing.state = inc.state || existing.state;
+            updatedCount++;
+          } else {
+            // Brand new card
+            maxId++;
+            const category = (inc.category || 'General').trim() || 'General';
+            const levelRaw = (inc.level || 'Intermediate').trim();
+            const level = levelRaw.charAt(0).toUpperCase() + levelRaw.slice(1).toLowerCase();
+            const newCard = {
+              id: String(maxId),
+              category,
+              level,
+              question: inc.question.trim(),
+              answer: inc.answer.trim(),
+              explanation: (inc.explanation || '').trim(),
+              reps: inc.reps !== undefined ? inc.reps : '0',
+              interval_mins: inc.interval_mins !== undefined ? inc.interval_mins : '0',
+              ease_factor: inc.ease_factor !== undefined ? inc.ease_factor : '2.5',
+              due_date: inc.due_date || nowIso,
+              last_reviewed: inc.last_reviewed || '',
+              last_rating: inc.last_rating || '',
+              state: inc.state || 'new'
+            };
+            cards.push(newCard);
+            cardMap.set(newCard.id, newCard);
+            questionMap.set(newCard.question.toLowerCase(), newCard);
+            newCount++;
+
+            // Append to markdown file in data/<category>/<level>.md
+            try {
+              const catDir = path.join(DATA_DIR, category);
+              if (!fs.existsSync(catDir)) {
+                fs.mkdirSync(catDir, { recursive: true });
+              }
+              const mdFile = path.join(catDir, `${level}.md`);
+              let qNum = 1;
+              if (fs.existsSync(mdFile)) {
+                const existingText = fs.readFileSync(mdFile, 'utf-8');
+                const matches = existingText.match(/^(?:#{1,4}\s+|\d+\.\s+)/gm);
+                if (matches) qNum = matches.length + 1;
+              }
+              const mdEntry = `\n\n${qNum}. ${newCard.question}\n\n**Deep explanation:** ${newCard.explanation}\n\n**Interview answer:** ${newCard.answer}\n`;
+              fs.appendFileSync(mdFile, mdEntry, 'utf-8');
+            } catch (err) {
+              console.warn('[Warning] Could not append to markdown file during import:', err);
+            }
+          }
+        }
+
+        writeCsv(cards);
+        return sendJson(200, {
+          success: true,
+          new_count: newCount,
+          updated_count: updatedCount,
+          total_cards: cards.length
+        });
+      }
+
       if (pathname === '/api/settings') {
         saveSettings(data);
         return sendJson(200, { success: true, settings: data });
