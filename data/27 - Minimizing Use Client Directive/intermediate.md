@@ -1,0 +1,11 @@
+1. How does unnecessarily hoisting the "use client" directive affect Core Web Vitals such as Total Blocking Time (TBT), First Input Delay (FID), and Interaction to Next Paint (INP)?
+
+**Deep explanation:** When static components are needlessly bundled as Client Components due to an elevated `"use client"` directive, they incur significant client-side hydration costs. Even though the server generates the initial HTML via SSR, the browser must still download, parse, compile, and execute the client JavaScript bundle to attach event listeners and synchronize the client-side virtual DOM:
+
+- **Total Blocking Time (TBT):** As bundle size expands, the browser's JavaScript engine spends prolonged periods executing hydration logic during page initialization. Any long task exceeding 50ms monopolizes the main thread, directly escalating Total Blocking Time.
+- **First Input Delay (FID) & Interaction to Next Paint (INP):** If a user attempts to interact with the page (clicking a button, opening a navigation drawer, or typing into an input) while the main thread is blocked by hydration scripts for static components, the interaction is queued. This latency causes noticeable input lag, degrading FID and INP scores.
+- **Largest Contentful Paint (LCP):** Overly large client bundles compete for network bandwidth with high-priority assets like hero images and fonts, and delay main-thread execution of rendering tasks critical for displaying the largest above-the-fold content.
+
+By pushing `"use client"` down to the interactive leaf nodes (e.g., only the `<InteractiveCounter />`), the client JavaScript payload drops to minimal kilobytes. The browser executes hydration almost instantaneously, keeping TBT near zero and ensuring immediate input responsiveness.
+
+**Interview answer:** `Hoisting "use client" bloats the JavaScript bundle and forces the browser to hydrate components that lack interactivity, monopolizing the main thread. This inflates Total Blocking Time (TBT) and degrades Interaction to Next Paint (INP) because the browser cannot process user interactions while executing unnecessary hydration scripts.`

@@ -1,0 +1,18 @@
+1. Why must a React reducer function be pure and immutable, and what runtime consequences occur if state is mutated or side effects are introduced?
+
+**Deep explanation:** A reducer passed to `useReducer` must strictly adhere to functional programming purity and state immutability:
+- **Purity:** A reducer must be deterministic—given the exact same `(state, action)` arguments, it must always return the exact same next state without inducing side effects (such as API calls, timer scheduling, local storage modifications, DOM manipulation, or generating non-deterministic values like `Date.now()` or `Math.random()`).
+- **Immutability:** React evaluates state updates using shallow reference equality (`Object.is`). If a developer directly mutates state properties (e.g., `state.count += 1; return state;`), the memory reference of the state object remains unchanged. React detects no reference difference and bails out of rendering, causing the UI to desynchronize from the actual data.
+- **Concurrent rendering and Strict Mode:** In development mode with React Strict Mode enabled, React intentionally invokes reducers twice per dispatch to expose accidental side effects. If a reducer contains side effects or mutations, double invocation causes duplicated operations, memory leaks, and corrupted state.
+- **Testability:** Pure reducers are completely decoupled from React internals, allowing comprehensive unit testing in standard test runners (like Vitest or Jest) as simple input-output functions without mocking the DOM or mounting components.
+
+**Interview answer:** "React reducers must be pure and immutable because React relies on shallow reference equality (`Object.is`) to detect state changes and schedule re-renders. Mutating state causes missed renders, and side effects inside reducers violate React's concurrency guarantees and trigger duplicate executions during Strict Mode."
+
+2. How does the referential stability of the `dispatch` function optimize React component architecture and performance?
+
+**Deep explanation:** React guarantees that the identity of the `dispatch` function returned by `useReducer` remains stable across all subsequent re-renders for the entire lifecycle of the component instance. This stability provides substantial architectural and performance advantages:
+- **Stable dependency arrays:** Because `dispatch` never changes reference identity, it can be safely passed into the dependency arrays of `useEffect`, `useCallback`, or custom hooks without triggering unwanted re-executions. (React's ESLint rules recognize this and even permit omitting `dispatch` from dependencies, though retaining it is clean practice).
+- **Preventing child re-renders (`React.memo`):** When passing callback functions down through props to memoized child components, standard arrow functions or inline setters recreate new references on every render, invalidating `React.memo`. Passing `dispatch` down avoids this churn entirely, as its identity never changes.
+- **Context optimization pattern:** In larger component trees, a recommended pattern is splitting Context into a `StateContext` and a `DispatchContext`. Components that only need to trigger actions (such as buttons or form fields) subscribe exclusively to `DispatchContext`. Because `dispatch` is referentially stable, these components will never re-render when the state updates, isolating re-renders exclusively to state consumers.
+
+**Interview answer:** "React guarantees that `dispatch` is referentially stable across renders, meaning its identity never changes. This prevents unnecessary child re-renders when passed down via props or Context, eliminates callback churn in memoized components, and keeps `useCallback` and `useEffect` dependency arrays stable."

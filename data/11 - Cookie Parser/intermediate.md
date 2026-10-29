@@ -1,0 +1,19 @@
+1. How does `cookie-parser` parse headers under the hood, and why is manual parsing of `req.headers.cookie` error-prone?
+
+**Deep explanation:** Under the hood, `cookie-parser` delegates string parsing to low-level RFC 6265 compliant libraries (such as the `cookie` package). The HTTP `Cookie` header format is `name=value; name2=value2; ...`, but naive manual parsing using string operations like `.split(';').map(c => c.split('='))` introduces severe edge cases and vulnerabilities:
+- **URL-Encoding and Special Characters:** Cookie values often contain percent-encoded characters (spaces, JSON strings, unicode). If malformed data is passed to `decodeURIComponent()`, JavaScript throws an uncaught `URIError` that can crash unhandled routes or open denial-of-service vectors. `cookie-parser` safely decodes values and skips malformed entries without throwing.
+- **Values Containing Delimiters:** Cookie values can contain equals signs (e.g., base64-encoded strings `token=abc123==`) or double quotes. A simple split on `=` truncates or corrupts the payload.
+- **Whitespace and Empty Headers:** RFC standards allow varying whitespace around semicolons. Manual parsing often retains leading or trailing whitespace in keys or values. Additionally, missing headers (`req.headers.cookie` being `undefined`) will throw a runtime error if accessed without null-checks.
+- **Robust Fallbacks:** `cookie-parser` guarantees consistent object structure (`req.cookies` is always an object, never `undefined` or `null`), sanitizes property keys, and prevents prototype pollution attacks during parsing.
+
+**Interview answer:** "Under the hood, `cookie-parser` uses RFC 6265 compliant parsing that safely percent-decodes values, handles delimiters like equals signs in base64 payloads, and handles whitespace. Manually splitting `req.headers.cookie` is brittle because malformed percent-encoding can trigger unhandled `URIError` exceptions and fail on complex or empty cookie strings."
+
+2. What is the difference between `req.cookies` and `req.signedCookies`, and how does `cookie-parser` implement cookie signing?
+
+**Deep explanation:** When initializing `cookie-parser`, an optional secret string or array of secret strings can be supplied: `app.use(cookieParser('my-secret-key'))`. This activates signed cookie support:
+- **`req.cookies`:** Holds standard unsigned cookies sent by the client. The server accepts these values as-is, meaning any user can easily edit them in browser devtools or via HTTP requests.
+- **`req.signedCookies`:** Holds cookies whose integrity has been verified against an HMAC (Hash-based Message Authentication Code). When a cookie is issued via `res.cookie('name', 'value', { signed: true })`, Express computes an HMAC signature using SHA-256 and the secret, prefixing the value with `s:` (e.g., `s:value.signatureHash`).
+- **Parsing and Verification:** When the client sends the cookie back, `cookie-parser` checks for the `s:` prefix. It recomputes the HMAC using the secret key. If the signature matches, it strips the signature and assigns the original value to `req.signedCookies.name`. If the signature has been tampered with or modified by the client, verification fails, and `req.signedCookies.name` is set to `false`.
+- **Integrity vs. Confidentiality:** A critical security distinction is that signing only ensures *tamper detection* (integrity), not *encryption* (confidentiality). The underlying cookie value remains visible as plaintext to the client unless explicitly encrypted.
+
+**Interview answer:** "`req.cookies` contains plain unsigned cookies, while `req.signedCookies` contains cookies verified against an HMAC signature using a server-side secret. Signing provides tamper-proofing and data integrity by setting modified cookies to `false`, though it does not encrypt or conceal the underlying value."

@@ -1,0 +1,75 @@
+{
+  "difficult": {
+    "value": 15,
+    "unit": "minutes"
+  },
+  "hard": {
+    "value": 10,
+    "unit": "minutes"
+  },
+  "good": {
+    "value": 1,
+    "unit": "hours"
+  },
+  "easy": {
+    "value": 1,
+    "unit": "days"
+  },
+  "presets": [
+    {
+      "id": "custom_1792644212578",
+      "name": "Verified Custom Preset",
+      "isDefault": false,
+      "categories": [
+        "05 HTML and CSS",
+        "06 JavaScript",
+        "07 TypeScript",
+        "08 React",
+        "09 Frontend Engineering",
+        "01 - Computed Property Syntax",
+        "02 - Functions and useEffect",
+        "03 - useReducer Flash Card",
+        "04 - useEffect Purpose",
+        "05 - Side Effects",
+        "06 - Reconciliation and DOM Update",
+        "07 - React Render and Commit Cycle",
+        "08 - useLayoutEffect vs useEffect",
+        "09 - ScrollHeight and DOM Measurements",
+        "10 - useEffectEvent",
+        "18 - TypeScript CSS Module Declarations",
+        "19 - Next.js Directives and Server-Client Boundaries",
+        "20 - useContext Cheat Sheet",
+        "21 - Zod Date Coercion",
+        "22 - Context and Page Reloads",
+        "23 - Nested Components vs Re-renders",
+        "24 - Context Provider Memoization",
+        "25 - Component Architecture and Placement",
+        "26 - Authentication in Next.js Server Components",
+        "27 - Minimizing Use Client Directive",
+        "28 - Next.js Server Actions",
+        "29 - Server and Client Component Imports",
+        "30 - Dynamic Segments vs Catch-all Segments",
+        "31 - Query Parameters in Next.js",
+        "32 - Handling Query Parameters with Hooks and Props",
+        "33 - Common Navigation Methods in Next.js",
+        "34 - Programmatic Navigation with useRouter",
+        "35 - Reading Current URL in Client Components"
+      ]
+    },
+    {
+      "id": "custom_1792863894386",
+      "name": "AI",
+      "isDefault": false,
+      "categories": [
+        "34 Voice Agentic AI",
+        "33 Agentic AI",
+        "32 RAG and agentic AI",
+        "35 Retrieval Augmented Generation"
+      ]
+    }
+  ],
+  "openrouter_keys": [
+    "sk-or-v1-nodekey111111",
+    "sk-or-v1-nodekey222222"
+  ]
+}

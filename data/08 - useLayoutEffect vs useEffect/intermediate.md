@@ -1,0 +1,12 @@
+1. When should you use `useLayoutEffect` over `useEffect`, and how does it prevent visual layout flicker?
+
+**Deep explanation:** `useLayoutEffect` should be reserved for scenarios where reading the DOM and synchronously applying changes is necessary to avoid visual layout shifts or "flicker":
+- **Preventing Visual Layout Flicker:** If you position an element using `useEffect`, the element is initially painted at a default or fallback position. Once the paint completes, `useEffect` executes, reads layout dimensions, updates state, and triggers a re-render. This causes the element to visibly "jump" or flicker from its initial to its final position across two consecutive frames. With `useLayoutEffect`, the measurement and state update occur synchronously before the browser ever paints the first frame, guaranteeing that the element appears at its final coordinates immediately.
+- **Common Use Cases:**
+  1. **Measuring DOM dimensions:** Calculating element geometry via `getBoundingClientRect()`, `offsetWidth`, `scrollHeight`, or `scrollTop`.
+  2. **Positioning popovers, tooltips, and dropdown menus:** Computing absolute coordinates relative to a target element or flipping dropdown placement if it overflows the viewport boundary.
+  3. **Scroll management and FLIP animations:** Restoring scroll positions or orchestrating smooth FLIP (First, Last, Invert, Play) layout animations before the browser renders intermediate frames.
+  4. **Synchronizing external non-React DOM libraries:** Initializing imperative third-party UI widgets that require accurate container sizing.
+- **Performance Trade-offs:** Because `useLayoutEffect` blocks browser painting, expensive calculations or cascading re-renders inside it freeze the main thread and cause noticeable input lag or dropped frames. By default, `useEffect` should be used 99% of the time, keeping `useLayoutEffect` as an intentional escape hatch for layout-dependent measurements.
+
+**Interview answer:** "`useLayoutEffect` is specifically designed for reading DOM measurements—such as tooltips, dropdowns, and popovers—and synchronously making DOM adjustments before the browser paints. Running before paint prevents the visible layout jump or flicker that occurs when measurements and state updates happen asynchronously in `useEffect`."

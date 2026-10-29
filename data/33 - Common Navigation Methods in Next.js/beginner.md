@@ -1,0 +1,11 @@
+1. What is the difference between `router.push()` and `router.replace()` in Next.js, and in what scenarios should each be used?
+
+**Deep explanation:** In Next.js client-side navigation (via the `useRouter` hook), both `router.push(href)` and `router.replace(href)` perform programmatic transitions to a new route, but they manipulate the browser's session history stack differently:
+- **`router.push(href)`:** Appends a new entry onto the browser's history stack (`window.history.pushState`). When the user clicks the browser's "Back" button, they return to the previous page or state. This is the default method for standard user interactions—such as clicking a navigation link or submitting a search query—where preserving the user's chronological trail is expected.
+- **`router.replace(href)`:** Mutates and replaces the current entry on the history stack (`window.history.replaceState`) without adding a new record. Clicking the "Back" button skips the current route entirely and navigates to the route visited prior to it.
+- **Key Use Cases for `router.replace`:**
+  - **Authentication & Login Redirects:** When an unauthorized user is redirected to `/login`, or redirected to `/dashboard` upon successful authentication, `replace` ensures that pressing the back button does not land them back on the login form or trigger an immediate redirect loop.
+  - **Multi-Step Wizards & Forms:** After submitting a final payment or step in a checkout funnel, replacing the route prevents users from clicking "Back" and unintentionally re-submitting duplicate transactional data.
+  - **Filter & Search Parameter Updates:** Updating non-critical URL search params (e.g., sort order, pagination, or tab selections) often utilizes `replace` to prevent cluttering the browser history with dozens of intermediate filter states.
+
+**Interview answer:** "`router.push()` adds a new entry to the browser's history stack so users can navigate back to the previous page, while `router.replace()` overwrites the current history record in place. Use `router.replace()` for authentication redirects, form completion steps, or filter updates where returning to the immediate prior URL would disrupt the user flow."

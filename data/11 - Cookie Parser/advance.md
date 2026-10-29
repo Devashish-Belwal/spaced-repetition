@@ -1,0 +1,10 @@
+1. What are the essential security considerations and best practices when using cookies and `cookie-parser` in production?
+
+**Deep explanation:** While `cookie-parser` handles deserializing request headers, securing cookie-based communication requires enforcing strict cookie attributes at creation and managing server-side constraints:
+- **Defense Against Client-Side Attacks:** Always set `httpOnly: true` on sensitive cookies (such as session IDs or refresh tokens) to block access via JavaScript (`document.cookie`), mitigating Cross-Site Scripting (XSS) token theft.
+- **Transport Security:** Set `secure: true` to ensure cookies are transmitted exclusively over encrypted HTTPS connections, preventing man-in-the-middle eavesdropping.
+- **CSRF Mitigation:** Configure `sameSite` to `'lax'` or `'strict'` to regulate whether cookies are sent along with cross-site requests, providing essential protection against Cross-Site Request Forgery (CSRF).
+- **Secret Management & Key Rotation:** When using signed cookies, never hardcode secrets in source code; load them from environment variables. Pass an array of secrets (`cookieParser(['primarySecret', 'legacySecret'])`) to enable zero-downtime key rotation where new cookies are signed with the first key while existing cookies signed with older keys remain valid.
+- **Header Size Limits:** HTTP headers have strict size thresholds (Node.js defaults to an 8KB–16KB total header limit). Storing large JSON payloads in cookies can easily trigger `431 Request Header Fields Too Large` errors. Store minimal identifiers (e.g., UUID session IDs) in cookies and keep the state server-side (e.g., in Redis).
+
+**Interview answer:** "Production cookie security requires setting `httpOnly` to prevent XSS theft, `secure` to mandate HTTPS transmission, and `sameSite` (`lax` or `strict`) to defend against CSRF attacks. Furthermore, developers should rotate signing secrets using key arrays and store only minimal identifiers in cookies to avoid exceeding HTTP header size limits."

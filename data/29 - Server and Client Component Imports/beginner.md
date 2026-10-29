@@ -1,0 +1,11 @@
+1. Why can Server Components import Client Components, but Client Components cannot directly import Server Components? What happens if you attempt to do so?
+
+**Deep explanation:** In React Server Components (RSC) and the Next.js App Router, the `"use client"` directive defines a boundary between two distinct execution environments: the server-only module graph and the client module graph.
+- **Server importing Client (Allowed):** When a Server Component imports a Client Component, it creates a module boundary. The server does not execute client-specific code (e.g., hooks, event handlers); instead, it renders an entry in the RSC payload referencing the client component chunk ID and its serialized props, allowing the browser to load and hydrate it.
+- **Client importing Server (Disallowed):** When a file marked with `"use client"` attempts to statically import a Server Component (`import ServerComponent from './ServerComponent'`), the module bundler (Webpack or Turbopack) treats that imported file as part of the client bundle. Because JavaScript imports are transitive, anything imported into a client file is pulled across the boundary into the browser JavaScript bundle.
+- **Consequences:**
+  1. *Bundle Bloat:* Server-only dependencies, heavy parsing libraries, or utility modules get shipped to the user's browser, degrading performance.
+  2. *Build and Runtime Errors:* If the imported Server Component uses Node.js-specific modules (`fs`, `crypto`), database clients (`Prisma`, `Mongoose`), access to private environment variables, or imports the `server-only` safeguard package, the build fails or the browser throws fatal runtime errors (e.g., `module not found` or `window is not defined`).
+  3. *Loss of Server Capabilities:* Async Server Components cannot be used as standard client components because client components in React cannot be async functions that return JSX.
+
+**Interview answer:** "Client Components cannot directly import Server Components because static imports cause the bundler to package that component and its dependencies into the client JavaScript bundle. If the Server Component relies on server-only APIs, database connections, or private environment variables, it will cause build failures or client runtime crashes."

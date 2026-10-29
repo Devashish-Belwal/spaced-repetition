@@ -1,0 +1,9 @@
+1. What is the fundamental difference between `scrollHeight`, `clientHeight`, and `offsetHeight` in the DOM box model, and what dimensions does each measurement encompass?
+
+**Deep explanation:** Understanding DOM measurements requires breaking down the CSS box model (content, padding, scrollbar, border, and margin):
+- **`clientHeight`**: Measures the inner height of an element's visible area. It includes the content height and vertical `padding`, but excludes horizontal scrollbars, `border`s, and `margin`s (`clientHeight = content + padding - scrollbarHeight`). It represents the viewport through which content is viewed without scrolling.
+- **`offsetHeight`**: Measures the total layout height of the element as rendered on screen. It includes content, vertical `padding`, horizontal scrollbars, and vertical `border`s (`offsetHeight = content + padding + scrollbar + border`). It excludes margins. This property indicates how much physical vertical space the element occupies in document flow.
+- **`scrollHeight`**: Measures the entire height of an element's content, including content overflowing off-screen that is currently hidden behind scrollbars. It includes content and vertical `padding`, but excludes `border`s, horizontal scrollbars, and `margin`s. If an element has no overflow, `scrollHeight` equals `clientHeight`.
+In summary: `clientHeight` is the visible viewport inside the borders; `offsetHeight` is the visible box including borders and scrollbars; and `scrollHeight` is the full unclipped content canvas.
+
+**Interview answer:** "In DOM measurements, `clientHeight` represents the visible inner box including padding but excluding borders and scrollbars; `offsetHeight` is the outer rendered dimension including padding, scrollbars, and borders; and `scrollHeight` measures the total scrollable content canvas, including overflowing content hidden outside the viewport."

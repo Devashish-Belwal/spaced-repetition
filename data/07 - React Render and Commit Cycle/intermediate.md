@@ -1,0 +1,10 @@
+1. What happens between calling `setState` and React processing the update, and how does automatic batching impact this flow?
+
+**Deep explanation:** Calling `setState` does not immediately update the state variable or invoke the component. The transition between trigger and processing involves scheduling and batching:
+- **1. Update Queueing & Priority Assignment:** Calling `setState` constructs an update object containing the payload or updater function and assigns it an execution priority (a priority lane, such as Immediate, User-Blocking, Normal, or Low/Transition). This update is enqueued onto the component's Fiber update queue.
+- **2. Requesting Work from the Scheduler:** React notifies its internal Scheduler that work is pending for this root fiber at the assigned lane.
+- **3. Event Handler Run-to-Completion:** JavaScript executes synchronously on a single thread. The remainder of the active event handler or function scope executes to completion before React begins processing the scheduled updates. Any variables in the current execution closure retain their pre-update values.
+- **4. Automatic Batching (React 18+):** Rather than re-rendering immediately for every individual `setState` call, React batches multiple state updates occurring within the same browser task—whether triggered inside native event handlers, React synthetic events, `setTimeout`, `setInterval`, or `Promise.then` microtasks—into a single render pass.
+- **5. Processing:** Once the call stack clears (or when microtasks flush), React's scheduler initiates the render phase, iterating through the fiber's update queue to compute the final state in a single pass, avoiding redundant reconciliation and preventing partial, inconsistent UI states from being shown.
+
+**Interview answer:** "`setState` queues an update object with a priority lane and yields control so the current JavaScript execution stack finishes, allowing React 18's automatic batching to combine multiple state updates across event handlers and async callbacks into a single re-render."

@@ -1,0 +1,9 @@
+1. How does `router.refresh()` work in the Next.js App Router, and how does it differ from a native browser reload?
+
+**Deep explanation:** `router.refresh()` is an App Router-specific method from `next/navigation` designed to synchronize server-rendered data with the client without a disruptive full-page reload:
+- **RSC Payload Refetching:** When `router.refresh()` is called, Next.js makes a network request to the server requesting an updated React Server Component (RSC) payload for the current route. The server re-executes all relevant Server Components on that route, fetching fresh data from underlying databases, APIs, or cache stores.
+- **Preservation of Client State:** Unlike a traditional browser reload (`window.location.reload()`) or a standard full-page navigation, `router.refresh()` does not destroy the client JavaScript environment. Ephemeral client-side state—including React `useState`, form input values, modal dialog visibility, scroll position (unless configured otherwise), and client-side stores (Zustand, Redux)—remains completely intact.
+- **Seamless Reconciliation:** React merges the new RSC tree with the existing client DOM using concurrent diffing. Only the specific DOM nodes affected by the updated Server Component data re-render, avoiding UI flashes or unmounting Client Component trees.
+- **Primary Use Case:** It is commonly called in Client Components after executing a data mutation (e.g., after an external API request or when working alongside Server Actions) to immediately reflect server-side data updates across the UI.
+
+**Interview answer:** "`router.refresh()` re-executes Server Components on the server and reconciles the new payload on the client without triggering a full page reload or clearing client-side state. Unlike `window.location.reload()`, it updates server data seamlessly while keeping active form inputs, ephemeral React state, and scroll position intact."

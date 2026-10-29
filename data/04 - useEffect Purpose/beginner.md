@@ -1,0 +1,10 @@
+1. What is the primary purpose of React's `useEffect` hook, and why is using it to simply "react to a state change" considered an anti-pattern?
+
+**Deep explanation:** The fundamental purpose of `useEffect` is synchronization with external systems—entities outside of React's declarative state and rendering model. Examples of external systems include browser APIs (like `window.addEventListener`, `IntersectionObserver`, or document title manipulation), third-party imperative UI widgets (like Leaflet, D3, or video players), timer APIs (`setInterval`), and real-time network connections (WebSockets or WebRTC). 
+
+Using `useEffect` merely to react to an internal state change (for example, watching `stateA` in an effect to call `setStateB`) is an anti-pattern because:
+- **Redundant re-renders:** Calling a state setter inside an effect forces React to commit the first render, run the effect after paint, and immediately schedule a second render pass. This can cause visual stutter, layout thrashing, and suboptimal performance.
+- **State desynchronization:** In between renders, the component's state is in an inconsistent, intermediate state where `stateA` has updated but `stateB` has not, creating bugs if child components or hooks rely on both values simultaneously.
+- **Loss of causality:** It decouples cause from effect. State changes are initiated by user actions or lifecycle events; spreading the resulting business logic into asynchronous effects makes tracking data flow and debugging significantly harder.
+
+**Interview answer:** "The primary purpose of `useEffect` is to synchronize a component with external systems outside React's control, such as DOM APIs, WebSockets, or third-party libraries. Using it simply to react to state changes is an anti-pattern that introduces unnecessary re-renders, intermediate inconsistent states, and fragmented business logic."

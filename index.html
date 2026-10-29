@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSRS — Software Developer Interview Revision</title>
+  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%220%22%20100%20100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>FlashSRS</h1>
+          <p>Software Developer Interview Spaced Repetition</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Filter Collections & Presets Button -->
+        <button type="button" id="btn-open-category-modal" class="btn-header btn-open-cat-modal" title="Filter collections, search topics, and choose or create presets">
+          <span>📂 Collections &amp; Presets</span>
+          <span id="cat-filter-count-badge" class="cat-badge-count">67</span>
+        </button>
+
+        <select id="category-filter" style="display:none;" title="Legacy Category Select">
+          <option value="all">All Categories</option>
+        </select>
+
+        <select id="level-filter" title="Filter by Difficulty Level">
+          <option value="all">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+
+        <input type="text" id="search-input" placeholder="Search questions..." />
+
+        <button id="btn-sync" class="btn-header" title="Scan data folder for newly added files or questions">
+          🔄 Sync New Files
+        </button>
+
+        <button id="btn-browse-cards" class="btn-header" title="Browse all questions">
+          📑 Browse Deck
+        </button>
+
+        <button type="button" id="btn-create-card-header" class="btn-header btn-create-card" title="Create a new flashcard with AI assistance (Shortcut: N)">
+          <span>➕ New Card</span>
+        </button>
+
+        <button id="btn-shortcuts" class="btn-header" title="Keyboard Shortcuts">
+          ⌨️ Shortcuts
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Secondary Toolbar: Modes & Live Stats -->
+  <nav class="toolbar-bar">
+    <div class="toolbar-container">
+      <div class="deck-tabs">
+        <button class="deck-tab active" data-mode="due">🎯 Due for Review</button>
+        <button class="deck-tab" data-mode="all">📚 All Cards</button>
+        <button class="deck-tab" data-mode="hard">🔥 Difficult / Hard</button>
+      </div>
+
+      <!-- Active Category Filter Chip -->
+      <div id="active-category-chip" class="active-category-chip" title="Active category filter">
+        <span class="chip-icon">📂</span>
+        <span id="active-category-chip-text"></span>
+        <button type="button" id="btn-clear-cat-chip" title="Clear category filter">&times;</button>
+      </div>
+
+      <div class="stats-summary">
+        <div class="stat-item" title="Cards due for revision now">
+          <span class="stat-dot due"></span>
+          <span>Due:</span>
+          <span id="stat-due" class="stat-val">0</span>
+        </div>
+        <div class="stat-item" title="Cards currently being learned">
+          <span class="stat-dot learning"></span>
+          <span>Learning:</span>
+          <span id="stat-learning" class="stat-val">0</span>
+        </div>
+        <div class="stat-item" title="Cards mastered (3+ successful reps)">
+          <span class="stat-dot mastered"></span>
+          <span>Mastered:</span>
+          <span id="stat-mastered" class="stat-val">0</span>
+        </div>
+        <div class="stat-item" title="Total questions in deck">
+          <span class="stat-dot total"></span>
+          <span>Total:</span>
+          <span id="stat-total" class="stat-val">—</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Flashcard Stage -->
+  <main class="main-stage">
+    <div class="card-viewport">
+      
+      <!-- Active Card Container -->
+      <div id="flashcard-container" class="flashcard">
+        
+        <!-- Card Header Info -->
+        <div class="card-header">
+          <div class="card-badges">
+            <span id="badge-category" class="badge badge-category">Category</span>
+            <span id="badge-level" class="badge badge-beginner">Level</span>
+          </div>
+          <div class="card-meta">
+            <button id="btn-card-ai-header" class="btn-card-ai-header" title="Ask AI Tutor about this question (Shortcut: C)">
+              <span>🤖 Ask AI</span>
+            </button>
+            <span id="card-counter">Loading...</span> · 
+            <span id="card-interval-meta">New Card</span>
+          </div>
+        </div>
+
+        <!-- Question Section (Always visible first) -->
+        <div class="card-body">
+          <div class="question-container">
+            <span class="question-label">Question</span>
+            <div id="question-text" class="question-text">
+              Loading questions from data.csv...
+            </div>
+          </div>
+        </div>
+
+        <!-- Reveal Button (Visible before answer is shown) -->
+        <div id="reveal-container" class="reveal-action-container">
+          <button id="btn-reveal" class="btn-reveal" autofocus>
+            <span>Show Answer</span>
+            <span class="kbd-badge">Space</span>
+          </button>
+        </div>
+
+        <!-- Answer Section (Hidden until Show Answer is clicked) -->
+        <div id="answer-section" class="answer-section">
+          <div class="answer-label-row">
+            <div class="answer-label">
+              <span>💡 Interview Answer</span>
+            </div>
+          </div>
+
+          <div id="answer-text" class="answer-text"></div>
+
+          <!-- Explanation & AI Chat Buttons -->
+          <div class="explanation-btn-wrapper">
+            <button id="btn-explanation" class="btn-explanation" title="Open Deep Explanation in a modal">
+              <span>📖 View Deep Explanation</span>
+              <span class="kbd-badge">E</span>
+            </button>
+            <button id="btn-card-chat" class="btn-explanation btn-ai-chat" title="Chat with AI Tutor about this card (Shortcut: C)">
+              <span>💬 Ask AI Tutor</span>
+              <span class="kbd-badge">C</span>
+            </button>
+          </div>
+
+          <!-- Spaced Repetition Reschedule Rating Buttons -->
+          <div class="rating-container">
+            <div class="rating-header">
+              <span>Rate your recall to reschedule:</span>
+              <span>Select 1-4 on your keyboard</span>
+            </div>
+
+            <div class="rating-buttons-grid">
+              <button id="btn-difficult" class="btn-rate difficult" title="Mark Difficult (Key: 1)">
+                <span class="rate-title">🔴 Difficult</span>
+                <span id="int-difficult" class="rate-interval">+10m</span>
+                <span class="rate-key">[ 1 ]</span>
+              </button>
+
+              <button id="btn-hard" class="btn-rate hard" title="Mark Hard (Key: 2)">
+                <span class="rate-title">🟠 Hard</span>
+                <span id="int-hard" class="rate-interval">+1d</span>
+                <span class="rate-key">[ 2 ]</span>
+              </button>
+
+              <button id="btn-good" class="btn-rate good" title="Mark Good (Key: 3)">
+                <span class="rate-title">🟢 Good</span>
+                <span id="int-good" class="rate-interval">+3d</span>
+                <span class="rate-key">[ 3 ]</span>
+              </button>
+
+              <button id="btn-easy" class="btn-rate easy" title="Mark Easy (Key: 4)">
+                <span class="rate-title">🔵 Easy</span>
+                <span id="int-easy" class="rate-interval">+7d</span>
+                <span class="rate-key">[ 4 ]</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Empty State (When all due cards are reviewed) -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">🎉</div>
+        <h2 class="empty-title">All Caught Up!</h2>
+        <p class="empty-subtitle">
+          You've reviewed all the due cards in this selection. Switch to "All Cards" mode above or select another category to keep practicing!
+        </p>
+      </div>
+
+      <!-- Card Sub-navigation Controls -->
+      <div class="card-subnav">
+        <button id="btn-prev" class="btn-subnav" title="Previous card (Left Arrow)">← Previous</button>
+        <button id="btn-rehide" class="btn-subnav" title="Re-hide answer">👁️ Re-hide Answer</button>
+        <button id="btn-skip" class="btn-subnav" title="Skip to next card (Right Arrow)">Skip Card →</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Deep Explanation Modal -->
+  <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span style="font-size: 1.25rem;">📖</span>
+          <h2 id="modal-title" class="modal-title">Deep Explanation</h2>
+        </div>
+        <button id="modal-close-btn" class="btn-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-q-context">
+          <strong>Question:</strong> <span id="modal-question"></span>
+        </div>
+        <div id="modal-explanation" class="explanation-body-text"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modal-done-btn" class="btn-header">Got It (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chat Modal -->
+  <div id="ai-chat-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ai-chat-modal-title">
+    <div class="modal-content ai-chat-modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header ai-chat-modal-header">
+        <div class="modal-title-wrap">
+          <span class="ai-avatar-badge">🤖</span>
+          <div>
+            <div class="ai-title-row">
+              <h2 id="ai-chat-modal-title" class="modal-title">AI Flashcard Tutor</h2>
+              <span id="ai-active-key-pill" class="ai-key-pill" title="Currently active OpenRouter API key">🔑 Key 1/1</span>
+              <span class="ai-model-badge" title="Routed via OpenRouter Free Model Router">openrouter/free</span>
+            </div>
+            <div id="ai-card-title-subtitle" class="ai-chat-subtitle">Card: Loading...</div>
+          </div>
+        </div>
+        <div class="ai-header-actions">
+          <button id="btn-toggle-key-mgr" class="btn-icon-subtle" title="Manage OpenRouter API Keys">
+            <span>⚙️ Keys</span>
+          </button>
+          <button id="btn-clear-chat" class="btn-icon-subtle" title="Clear chat history for this card">
+            <span>🗑️ Clear</span>
+          </button>
+          <button id="ai-modal-close-btn" class="btn-close-modal" aria-label="Close modal">&times;</button>
+        </div>
+      </div>
+
+      <!-- Collapsible Multi-Key Manager Panel -->
+      <div id="ai-key-manager-panel" class="ai-key-panel" style="display: none;">
+        <div class="ai-key-panel-header">
+          <strong>🔑 OpenRouter API Keys Manager</strong>
+          <span class="ai-key-subtext">Automatic failover &amp; cycling on rate limit (HTTP 429)</span>
+        </div>
+        <p class="ai-key-desc">
+          Add one or more OpenRouter API keys below (one per line). Free keys can be created at
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>. Keys are saved locally in <code>openrouter_keys.txt</code> in your app folder.
+        </p>
+        <textarea id="ai-keys-input" class="ai-keys-textarea" rows="3" placeholder="Paste your OpenRouter API keys here (one key per line)...&#10;sk-or-v1-xxxxxxxx...&#10;sk-or-v1-yyyyyyyy..."></textarea>
+        <div class="ai-key-actions-row">
+          <div id="ai-keys-summary" class="ai-keys-summary">0 keys configured</div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" id="btn-cycle-key-manual" class="btn-ghost btn-sm" title="Manually switch to the next key">🔄 Rotate Key</button>
+            <button type="button" id="btn-save-keys" class="btn-header btn-sm" style="background: var(--btn-good-border); color: #fff;">Save Keys</button>
+          </div>
+        </div>
+        <div id="ai-keys-list-preview" class="ai-keys-list-preview"></div>
+      </div>
+
+      <!-- Context Accordion / Indicator -->
+      <div class="ai-context-banner">
+        <div class="ai-context-left">
+          <span class="context-indicator-dot"></span>
+          <span class="context-text">Full card context loaded: <strong>Question</strong>, <strong>Interview Answer</strong> &amp; <strong>Deep Explanation</strong></span>
+        </div>
+        <button type="button" id="btn-toggle-context-preview" class="btn-context-toggle">Inspect Context ▾</button>
+      </div>
+      <div id="ai-context-preview-body" class="ai-context-preview-body" style="display: none;">
+        <div class="context-preview-section">
+          <div class="context-preview-label">Question:</div>
+          <div id="ai-context-q" class="context-preview-content"></div>
+        </div>
+        <div class="context-preview-section">
+          <div class="context-preview-label">Answer:</div>
+          <div id="ai-context-a" class="context-preview-content"></div>
+        </div>
+        <div class="context-preview-section">
+          <div class="context-preview-label">Deep Explanation:</div>
+          <div id="ai-context-e" class="context-preview-content"></div>
+        </div>
+      </div>
+
+      <!-- Live Chat Messages Container -->
+      <div id="ai-chat-messages" class="ai-chat-messages">
+        <!-- Messages dynamically rendered here -->
+      </div>
+
+      <!-- Suggested Prompt Chips (Visible when chat is empty) -->
+      <div id="ai-prompt-chips" class="ai-prompt-chips">
+        <span class="chips-label">💡 Suggestions:</span>
+        <button type="button" class="ai-chip" data-prompt="Can you give me a simple real-world analogy to understand this concept?">Analogy</button>
+        <button type="button" class="ai-chip" data-prompt="Can you provide a clear, practical code example demonstrating this?">Code Example</button>
+        <button type="button" class="ai-chip" data-prompt="What follow-up questions might an interviewer ask after this?">Interviewer Follow-ups</button>
+        <button type="button" class="ai-chip" data-prompt="What are the performance and architectural trade-offs here?">Trade-offs</button>
+        <button type="button" class="ai-chip" data-prompt="Give me a subtle hint to help me recall the answer without giving it away.">Give Me a Hint</button>
+      </div>
+
+      <!-- Rotation Notice Toast Banner -->
+      <div id="ai-rotation-banner" class="ai-rotation-banner" style="display: none;"></div>
+
+      <!-- Input Footer Area -->
+      <div class="ai-chat-input-container">
+        <div class="ai-input-wrapper">
+          <textarea id="ai-chat-input" class="ai-chat-input" rows="1" placeholder="Ask anything about this flashcard... (Shift+Enter for new line)"></textarea>
+          <button id="btn-ai-send" class="btn-ai-send" title="Send query (Enter)">
+            <span>Send</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="ai-input-footnote">
+          <span>Press <strong>Enter</strong> to send &bull; <strong>Shift + Enter</strong> for newline</span>
+          <span id="ai-input-status-note"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Create New Card Modal -->
+  <div id="create-card-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="create-card-modal-title">
+    <div class="modal-content create-card-modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span style="font-size: 1.4rem;">✨</span>
+          <div>
+            <div class="create-card-title-row">
+              <h2 id="create-card-modal-title" class="modal-title">Create New Flashcard</h2>
+              <span id="create-card-key-pill" class="ai-key-pill" title="Active OpenRouter API key status">🔑 Key Ready</span>
+            </div>
+            <div class="create-card-subtitle">Generate interview answer &amp; deep explanation with AI, edit, refine, and save</div>
+          </div>
+        </div>
+        <button id="create-card-close-btn" class="btn-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="modal-body create-card-modal-body">
+        
+        <!-- Collection & Level Selection Row -->
+        <div class="create-card-grid-row">
+          <div class="form-group flex-1">
+            <label for="create-card-category" class="form-label">
+              <span>📂 Collection / Category</span>
+              <span class="label-hint">Select existing or type a new one</span>
+            </label>
+            <input type="text" id="create-card-category" list="collection-datalist" class="form-input" placeholder="e.g. 06 JavaScript or System Design..." autocomplete="off" />
+            <datalist id="collection-datalist">
+              <!-- Dynamically populated with all categories -->
+            </datalist>
+          </div>
+
+          <div class="form-group" style="width: 170px;">
+            <label for="create-card-level" class="form-label">Difficulty Level</label>
+            <select id="create-card-level" class="form-select">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate" selected>Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Question Input Section -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="create-card-question" class="form-label">Question</label>
+            <span class="label-hint">What interview question do you want to master?</span>
+          </div>
+          <div class="question-input-wrap">
+            <textarea id="create-card-question" class="form-textarea" rows="2" placeholder="e.g. What is the difference between Promise.all() and Promise.allSettled()?"></textarea>
+            <button type="button" id="btn-ai-generate-card" class="btn-generate-ai" title="Generate interview answer and deep explanation using OpenRouter AI">
+              <span>⚡ Generate with AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Generating Loading Banner -->
+        <div id="create-card-loading" class="create-card-loading-state" style="display: none;">
+          <div class="ai-typing-indicator">
+            <span class="ai-typing-dot"></span>
+            <span class="ai-typing-dot"></span>
+            <span class="ai-typing-dot"></span>
+          </div>
+          <span id="create-card-loading-text">OpenRouter AI is crafting your interview answer &amp; deep explanation...</span>
+        </div>
+
+        <!-- Answer Section (Editable + Preview) -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="create-card-answer" class="form-label">
+              <span>💡 Interview Answer</span>
+              <span class="label-badge">Concise verbal answer</span>
+            </label>
+            <div class="field-actions">
+              <button type="button" id="btn-toggle-preview-answer" class="btn-subtle-toggle">👁️ Preview</button>
+            </div>
+          </div>
+          <textarea id="create-card-answer" class="form-textarea" rows="3" placeholder="Click '⚡ Generate with AI' above or type your concise interview response here..."></textarea>
+          <div id="preview-card-answer" class="markdown-preview-box" style="display: none;"></div>
+        </div>
+
+        <!-- Deep Explanation Section (Editable + Preview) -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="create-card-explanation" class="form-label">
+              <span>📖 Deep Explanation</span>
+              <span class="label-badge">Comprehensive breakdown, code &amp; trade-offs</span>
+            </label>
+            <div class="field-actions">
+              <button type="button" id="btn-toggle-preview-explanation" class="btn-subtle-toggle">👁️ Preview</button>
+            </div>
+          </div>
+          <textarea id="create-card-explanation" class="form-textarea" rows="6" placeholder="Deep technical explanation, code snippets, edge cases, and architectural context..."></textarea>
+          <div id="preview-card-explanation" class="markdown-preview-box" style="display: none;"></div>
+        </div>
+
+        <!-- Iterative AI Refinement Bar -->
+        <div class="refinement-panel">
+          <div class="refinement-header">
+            <span class="refinement-title">✨ Resend to OpenRouter for Improvement</span>
+            <span class="refinement-subtitle">Need to adjust or polish? Instruct the AI to iterate on the answer &amp; explanation:</span>
+          </div>
+          
+          <div class="refinement-input-row">
+            <input type="text" id="refinement-instruction-input" class="form-input" placeholder="e.g. Make the answer more punchy, add a code example, or explain under the hood..." />
+            <button type="button" id="btn-ai-refine-card" class="btn-refine-ai" title="Resend to OpenRouter with instructions">
+              <span>✨ Improve</span>
+            </button>
+          </div>
+
+          <!-- Preset Refinement Chips -->
+          <div class="refinement-chips">
+            <span class="chips-label">Quick Refine:</span>
+            <button type="button" class="ai-chip refine-chip" data-instruction="Make the interview answer more concise and punchy for verbal delivery.">⚡ More Concise</button>
+            <button type="button" class="ai-chip refine-chip" data-instruction="Add a clear, practical, syntax-highlighted code example with common edge cases.">💻 Add Code Example</button>
+            <button type="button" class="ai-chip refine-chip" data-instruction="Explain the underlying browser/engine mechanism and architectural trade-offs in deeper detail.">🔬 Deeper Mechanics</button>
+            <button type="button" class="ai-chip refine-chip" data-instruction="Include 2-3 likely follow-up questions an interviewer might ask and how to answer them.">🎯 Add Follow-up Q&amp;A</button>
+          </div>
+        </div>
+
+        <!-- Post-Save Success Banner -->
+        <div id="create-card-success-banner" class="create-card-success-banner" style="display: none;">
+          <div class="success-message">
+            <span style="font-size: 1.3rem;">🎉</span>
+            <span id="create-card-success-text">Card successfully created and added to collection!</span>
+          </div>
+          <div class="success-actions">
+            <button type="button" id="btn-create-another" class="btn-ghost btn-sm">➕ Create Another Card</button>
+            <button type="button" id="btn-view-created-card" class="btn-header btn-sm" style="background: var(--btn-good-border); color: #fff;">👁️ View Card in Deck</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer create-card-footer">
+        <button type="button" id="btn-cancel-create-card" class="btn-ghost">Cancel (Esc)</button>
+        <button type="button" id="btn-save-new-card" class="btn-header" style="background: var(--btn-good-border); color: #ffffff; font-weight: 600;">
+          💾 Save Card to Collection
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Collections & Presets Modal -->
+  <div id="category-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cat-modal-title">
+    <div class="modal-content" style="max-width: 940px; height: 86vh;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span style="font-size: 1.3rem;">📂</span>
+          <h2 id="cat-modal-title" class="modal-title">Collections &amp; Presets</h2>
+        </div>
+        <button id="cat-modal-close-btn" class="btn-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- 2-Column Split Layout -->
+      <div class="cat-modal-split-layout">
+        
+        <!-- Left Sidebar: Presets (Selection & Creation) -->
+        <aside class="cat-modal-sidebar">
+          <div class="cat-sidebar-header">
+            <span class="cat-sidebar-title">⚡ Presets</span>
+            <button type="button" id="btn-sidebar-new-preset" class="btn-new-preset-sm" title="Create preset from current selection">
+              ➕ New Preset
+            </button>
+          </div>
+
+          <!-- Inline Preset Creator Form -->
+          <div id="inline-preset-creator" class="inline-preset-creator">
+            <input type="text" id="new-preset-name-input" placeholder="Preset name (e.g. Frontend Stack)..." />
+            <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+              <button type="button" id="btn-cancel-save-preset" class="btn-ghost" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Cancel</button>
+              <button type="button" id="btn-confirm-save-preset" class="btn-header" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; background: var(--btn-good-border); color: white;">Save</button>
+            </div>
+          </div>
+
+          <!-- Presets List (All + Built-in + Custom) -->
+          <div id="cat-presets-list" class="cat-presets-list">
+            <!-- Dynamically populated preset items -->
+          </div>
+        </aside>
+
+        <!-- Right Main Panel: Collections Filter & Search -->
+        <main class="cat-modal-main">
+          <!-- Search Bar -->
+          <div class="cat-main-search-bar">
+            <div class="cat-search-box-modal">
+              <span class="cat-search-icon">🔍</span>
+              <input type="text" id="cat-modal-search" placeholder="Search collections (e.g. React, SQL, Cloud, TypeScript, Node)..." autocomplete="off" />
+              <button type="button" id="cat-modal-search-clear" class="cat-search-clear" style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-size:1.2rem; display:none;">&times;</button>
+            </div>
+          </div>
+
+          <!-- Main Toolbar: Summary & Bulk Actions -->
+          <div class="cat-main-toolbar">
+            <div id="cat-modal-selection-summary" class="cat-selection-summary">
+              Selected: <strong id="cat-summary-count">67</strong> of <span id="cat-summary-total">67</span> collections (<span id="cat-summary-cards">3,707</span> cards)
+            </div>
+            <div class="cat-bulk-buttons">
+              <button type="button" id="btn-modal-select-all" class="cat-action-btn">Select All</button>
+              <button type="button" id="btn-modal-clear-all" class="cat-action-btn">Clear All</button>
+              <button type="button" id="btn-modal-invert" class="cat-action-btn">Invert</button>
+            </div>
+          </div>
+
+          <!-- Collections List Scroll -->
+          <div id="cat-modal-collections-list" class="cat-main-list-scroll">
+            <!-- Dynamically populated collection items -->
+          </div>
+        </main>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer" style="justify-content: space-between; align-items: center;">
+        <button type="button" id="btn-modal-reset-all" class="btn-ghost" title="Reset selection to all collections">
+          🔄 Reset to All
+        </button>
+
+        <div style="display: flex; gap: 0.6rem;">
+          <button type="button" id="btn-modal-cancel" class="btn-ghost">Cancel</button>
+          <button type="button" id="btn-modal-apply" class="btn-reveal" style="padding: 0.5rem 1.75rem; font-size: 0.95rem;">
+            Apply Filter
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="shortcuts-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span>⌨️</span>
+          <h2 class="modal-title">Keyboard Shortcuts</h2>
+        </div>
+        <button id="shortcuts-close-btn" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="font-size: 0.95rem;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">Space</span> or <span class="kbd-badge">Enter</span></td>
+            <td>Reveal Answer</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">1</span></td>
+            <td>Rate: Difficult</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">2</span></td>
+            <td>Rate: Hard</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">3</span></td>
+            <td>Rate: Good</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">4</span></td>
+            <td>Rate: Easy</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">E</span></td>
+            <td>Toggle Deep Explanation Modal</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">C</span></td>
+            <td>Open AI Chat Tutor Modal</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">N</span></td>
+            <td>Create New Card with AI</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color); height: 38px;">
+            <td><span class="kbd-badge">Esc</span></td>
+            <td>Close Modals / Drawers</td>
+          </tr>
+          <tr style="height: 38px;">
+            <td><span class="kbd-badge">&larr;</span> / <span class="kbd-badge">&rarr;</span></td>
+            <td>Previous / Skip Card</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Browser Drawer -->
+  <div id="drawer-overlay" class="browser-drawer">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.25rem;">📑</span>
+          <h2 style="font-size: 1.1rem; font-weight: 700;">Question Browser</h2>
+          <span id="drawer-count" class="badge badge-category">0 cards</span>
+        </div>
+        <button id="drawer-close-btn" class="btn-close-modal">&times;</button>
+      </div>
+
+      <div style="padding: 1rem 1.5rem 0.5rem 1.5rem;">
+        <input type="text" id="drawer-search" placeholder="Filter questions by keywords..." style="width: 100%;" />
+      </div>
+
+      <div id="drawer-list" class="drawer-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Footer: Spaced Repetition Reschedule Intervals (Editable in the footer of the SPA) -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-top-row">
+        <div>
+          <div class="footer-heading">
+            <span>⚙️</span>
+            <span>Spaced Repetition Reschedule Intervals</span>
+          </div>
+          <p class="footer-desc">
+            Customize how far into the future cards get rescheduled when you rate them. These settings automatically recalculate intervals and save to your local data.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="btn-save-settings" class="btn-header">Save Intervals</button>
+          <button id="btn-reset-settings" class="btn-ghost" title="Reset intervals to default values">Reset Defaults</button>
+        </div>
+      </div>
+
+      <!-- Reschedule Interval Inputs Grid -->
+      <div class="settings-grid">
+        <!-- Difficult -->
+        <div class="setting-card">
+          <label class="setting-label difficult">🔴 Difficult Interval</label>
+          <div class="setting-inputs">
+            <input type="number" id="setting-difficult-val" min="1" max="1000" value="10" />
+            <select id="setting-difficult-unit">
+              <option value="minutes" selected>minutes</option>
+              <option value="hours">hours</option>
+              <option value="days">days</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Hard -->
+        <div class="setting-card">
+          <label class="setting-label hard">🟠 Hard Interval</label>
+          <div class="setting-inputs">
+            <input type="number" id="setting-hard-val" min="1" max="1000" value="1" />
+            <select id="setting-hard-unit">
+              <option value="minutes">minutes</option>
+              <option value="hours">hours</option>
+              <option value="days" selected>days</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Good -->
+        <div class="setting-card">
+          <label class="setting-label good">🟢 Good Interval</label>
+          <div class="setting-inputs">
+            <input type="number" id="setting-good-val" min="1" max="1000" value="3" />
+            <select id="setting-good-unit">
+              <option value="minutes">minutes</option>
+              <option value="hours">hours</option>
+              <option value="days" selected>days</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Easy -->
+        <div class="setting-card">
+          <label class="setting-label easy">🔵 Easy Interval</label>
+          <div class="setting-inputs">
+            <input type="number" id="setting-easy-val" min="1" max="1000" value="7" />
+            <select id="setting-easy-unit">
+              <option value="minutes">minutes</option>
+              <option value="hours">hours</option>
+              <option value="days" selected>days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Status & Actions -->
+      <div class="footer-bottom-row">
+        <div class="footer-sync-status">
+          <span id="sync-dot" class="sync-dot"></span>
+          <span id="sync-text">Checking data.csv connection...</span>
+        </div>
+
+        <div class="footer-actions">
+          <button id="btn-sync-footer" class="btn-ghost" title="Scan data folder for newly added files or questions">
+            🔄 Scan for New Files
+          </button>
+          <button id="btn-download-csv" class="btn-ghost" title="Download data.csv backup">
+            💾 Download data.csv
+          </button>
+          <button id="btn-import-csv" class="btn-ghost" title="Import data.csv backup or progress">
+            📂 Import data.csv
+          </button>
+          <input type="file" id="file-import-csv" accept=".csv" style="display: none;" />
+          <button id="btn-reset-progress" class="btn-ghost" style="color: #f87171;" title="Reset all intervals and review history">
+            🔄 Reset All Progress
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>

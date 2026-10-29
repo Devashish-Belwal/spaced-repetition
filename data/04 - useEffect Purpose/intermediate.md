@@ -1,0 +1,9 @@
+1. When state updates are needed in response to user actions or data changes, how should logic be structured instead of using `useEffect`?
+
+**Deep explanation:** Most logic mistakenly placed in `useEffect` belongs in one of two places:
+1. **Directly in Event Handlers:** If logic runs because a user performed a discrete action (such as clicking a button, submitting a form, or typing in an input), all related state updates and side effects belong directly inside that event handler. Event handlers have access to the exact user context and payload, execute synchronously within the event dispatch cycle, and allow React to batch multiple state updates together into a single render pass.
+2. **Computed / Derived State during Render:** If state needs to adjust based on existing props or state, it should be calculated directly during render rather than stored in a separate state variable updated via an effect. For example, instead of storing `items` and a synchronized `filteredItems` state via `useEffect`, filter the items inline during rendering: `const filteredItems = items.filter(...)` (optionally wrapped in `useMemo` if computationally expensive). This guarantees that the derived value is always immediately up-to-date in the initial render frame with zero extra rendering passes.
+
+A good architectural rule of thumb is: ask whether the code should run because the component *displayed* and needs to synchronize with the outside world, or because the user *did something*. If it's because the user did something, keep it in the event handler.
+
+**Interview answer:** "If a value can be calculated from existing props or state, compute it directly during rendering rather than storing it in duplicate state synced via an effect. If an action or secondary state change is triggered by a user interaction, place that logic directly inside the corresponding event handler."

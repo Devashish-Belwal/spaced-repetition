@@ -1,0 +1,12 @@
+# Local API Keys & Secrets
+openrouter_keys.txt
+api_keys.txt
+.env
+
+# Vercel & Deployment
+.vercel
+
+# Temporary Files
+*.tmp
+__pycache__/
+*.pyc

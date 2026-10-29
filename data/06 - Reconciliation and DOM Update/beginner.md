@@ -1,0 +1,12 @@
+1. What is reconciliation in React, and why does React compute minimal atomic DOM mutations instead of re-rendering or replacing the DOM tree?
+
+**Deep explanation:** Reconciliation is the algorithmic process through which React compares two Virtual DOM trees (the current tree and a newly rendered tree produced by state or prop changes) to compute the difference and synchronize the browser's real DOM.
+
+In traditional web development, naive UI updates often relied on replacing container contents (such as `container.innerHTML = newMarkup`) or manually manipulating elements. Rebuilding or replacing entire subtrees is computationally prohibitive for several reasons:
+- **Layout Thrashing and Style Recalculation:** Destroying and re-creating DOM nodes forces the browser engine to tear down internal C++ DOM representations, recompute CSSOM cascades, recalculate layouts (reflow), and repaint pixels across parent and child nodes.
+- **Loss of Ephemeral State:** Replacing DOM elements destroys active state maintained natively by the browser, such as input focus, cursor position, text selection, scroll coordinates, and in-flight CSS transitions or animations.
+- **Memory Churn:** Rapidly discarding and allocating large trees of browser DOM objects creates significant garbage collection pauses.
+
+React circumvents these issues by maintaining an in-memory Virtual DOM. When an update occurs—for example, adding `Note 3` to an existing list containing `Note 1` and `Note 2`—React's diffing engine inspects the tree and recognizes that the root `<ul>` and existing `<li>` nodes are unchanged. Instead of sending a full HTML string replacement to the browser, React computes the precise atomic mutation needed and executes `ul.appendChild(newLi)`. Computing minimal atomic operations minimizes reflow, keeps UI interactions fluid, and preserves native browser state.
+
+**Interview answer:** "Reconciliation is React's algorithm for comparing two Virtual DOM trees to determine the exact delta between them. Instead of tearing down and recreating entire DOM structures—which destroys input focus, resets scroll positions, and triggers expensive browser reflows—React computes the specific differences and applies minimal atomic mutations like `appendChild` or `setAttribute`."

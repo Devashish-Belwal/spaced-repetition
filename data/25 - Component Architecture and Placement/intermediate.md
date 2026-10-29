@@ -1,0 +1,14 @@
+1. What specific capabilities, hooks, and browser APIs strictly mandate marking a component with the `'use client'` directive, and what does this directive actually do under the hood?
+
+**Deep explanation:** The `'use client'` directive serves as a formal boundary marker between the server and client component modules. A component must be designated as a Client Component whenever it requires:
+- **Interactive State Management:** Hooks that preserve or mutate state over time across user interactions, such as `useState`, `useReducer`, `useOptimistic`, or `useActionState`.
+- **Lifecycle and Side Effects:** Hooks that run code in response to DOM events, mount/unmount lifecycles, or layout calculations, including `useEffect`, `useLayoutEffect`, and `useInsertionEffect`.
+- **React Context Access:** React Context consumers and providers (`createContext`, `useContext`) when sharing dynamic state or managing client-side subscriptions and themes.
+- **DOM Event Listeners:** Attaching interactive user event handlers (`onClick`, `onChange`, `onSubmit`, `onScroll`, `onKeyDown`) directly to JSX elements. Because functions and event handlers cannot be serialized into the JSON-like RSC payload streamed from the server, any component handling user gestures must run on the client.
+- **Browser-Only Globals and APIs:** Direct interaction with `window`, `document`, `navigator`, `localStorage`, `sessionStorage`, `IndexedDB`, geolocation, WebSockets, or HTML5 Canvas/WebGL APIs.
+- **Custom Hooks:** Any custom hook built on top of client hooks or browser APIs.
+
+**Under the hood:**
+A common misconception is that `'use client'` means "render only in the browser and skip server-side rendering (SSR)." In reality, Client Components are still pre-rendered into static HTML on the server during the initial page load to ensure immediate visual delivery and SEO benefits. The `'use client'` directive is an instruction to the bundler (Turbopack / Webpack) that defines a **network boundary**: it instructs the build system to treat the file and all of its imported children as client-side dependencies, emit them into the client JavaScript bundle, and hydrate their DOM nodes with event listeners once downloaded by the browser.
+
+**Interview answer:** "A component strictly requires `'use client'` if it uses React state hooks, lifecycle effects, context, DOM event handlers, or browser-only APIs like `window` or `localStorage`. Under the hood, `'use client'` does not bypass server-side rendering; rather, it establishes a boundary telling the bundler to package that component and its imported dependencies into the client JavaScript bundle for hydration."

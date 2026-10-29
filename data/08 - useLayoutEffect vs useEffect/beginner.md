@@ -1,0 +1,9 @@
+1. What is the fundamental difference in execution timing between `useEffect` and `useLayoutEffect` in React's render and commit lifecycle?
+
+**Deep explanation:** The distinction between `useEffect` and `useLayoutEffect` lies in when their callbacks are executed relative to the browser's rendering pipeline (Render -> Commit -> Paint):
+- **Commit vs. Paint phases:** During the render phase, React executes component functions, calculates JSX, and diffs the Virtual DOM. In the commit phase, React synchronously mutates the real DOM tree and updates references. Once the DOM is updated, the browser performs layout (reflow) and paints pixels onto the screen.
+- **`useLayoutEffect` (Synchronous, Before Paint):** Runs synchronously immediately after React commits changes to the DOM, but *before* the browser paints the screen. Because execution is synchronous, it blocks the browser's main thread. If you trigger a state update inside `useLayoutEffect`, React recalculates and commits the updated DOM synchronously before relinquishing control to the browser, ensuring the user only sees the final result.
+- **`useEffect` (Asynchronous / Passive, After Paint):** Runs asynchronously *after* the browser has already calculated layout and painted the screen. React defers `useEffect` execution using scheduler tasks so it does not block the browser paint or delay user interaction.
+- **Cleanups:** Cleanup functions follow the exact same timing rules: `useLayoutEffect` cleanup runs synchronously before the next layout effect and before paint, whereas `useEffect` cleanup runs asynchronously after subsequent paints.
+
+**Interview answer:** "`useLayoutEffect` runs synchronously immediately after React commits DOM mutations but before the browser paints pixels to the screen, blocking the main thread. In contrast, `useEffect` runs asynchronously after the paint has completed, ensuring that side effects do not block visual rendering or degrade user responsiveness."

@@ -1,0 +1,17 @@
+1. How does a backend server create and send cookies to a client using Express (`res.cookie()`), and how does the browser scope and transmit them?
+
+**Deep explanation:** In Express, `res.cookie(name, value, [options])` is a helper method that constructs and appends the HTTP `Set-Cookie` response header. When invoked, Express serializes the provided key, value, and configuration directives into a standardized header string (e.g., `Set-Cookie: accessToken=xyz; Path=/; HttpOnly; Secure; SameSite=Lax`). When the browser receives this HTTP response, it parses the `Set-Cookie` directive, evaluates its attributes, and saves the cookie into its local storage ("cookie jar"). For every subsequent outbound HTTP request, the browser's networking layer automatically checks whether the target URL matches the cookie's scoping parameters:
+- **`domain`**: Dictates which hosts are permitted to receive the cookie. If omitted, it defaults to the exact origin host excluding subdomains. If explicitly specified (e.g., `domain: "example.com"`), subdomains like `api.example.com` will also receive the cookie.
+- **`path`**: Indicates the URL path prefix required in the request URL for the cookie to be sent (e.g., `path: "/"` matches all routes, while `path: "/api"` restricts delivery to endpoints under `/api`).
+Matching cookies are serialized into a single semicolon-delimited `Cookie` request header (e.g., `Cookie: accessToken=xyz; theme=dark`) and transmitted automatically without requiring client-side JavaScript or manual fetch header management.
+
+**Interview answer:** "Express's `res.cookie()` serializes cookie parameters into an HTTP `Set-Cookie` response header. The browser parses this header, persists the cookie in its cookie jar, and automatically includes it in the `Cookie` request header on subsequent requests that match the cookie's `domain` and `path` scope."
+
+2. What is the fundamental difference in role and pipeline position between `res.cookie()` and `cookieParser()` middleware in Express?
+
+**Deep explanation:** While both deal with HTTP cookies, they operate at opposite ends of the request-response lifecycle:
+- **`res.cookie()` (Outbound Response):** This is a server response method used to write cookies. It formats the provided key, value, and options into a `Set-Cookie` header on the outgoing HTTP response object (`res`). It is executed by route handlers or authentication controllers to instruct the client browser to store or update a cookie in the client-side cookie jar.
+- **`cookieParser()` (Inbound Request):** This is a server middleware executed at the beginning of the request pipeline. It inspects incoming HTTP request headers—specifically the raw `Cookie` header string sent by the browser (`req.headers.cookie`)—and deserializes the semicolon-separated pairs into a clean JavaScript object attached to `req.cookies` (or `req.signedCookies` if configured with a secret key).
+- **Key distinction:** `cookieParser()` never creates, stores, or transmits cookies to the client browser, nor does it persist sessions on the server. Conversely, `res.cookie()` does not read incoming headers or populate `req.cookies`.
+
+**Interview answer:** "`res.cookie()` is an outbound response method that instructs the client browser to store a cookie by generating a `Set-Cookie` header, whereas `cookieParser()` is inbound middleware that parses raw `Cookie` request headers into the `req.cookies` object."

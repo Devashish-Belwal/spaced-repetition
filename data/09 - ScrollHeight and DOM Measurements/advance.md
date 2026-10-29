@@ -1,0 +1,11 @@
+1. What performance bottlenecks occur when manipulating `scrollHeight` and inline styles, and what modern strategies exist to mitigate layout thrashing?
+
+**Deep explanation:** The classic auto-resize pattern (`style.height = 'auto'` followed immediately by reading `scrollHeight` and writing back `style.height = scrollHeight + 'px'`) introduces **forced synchronous layout (reflow) and layout thrashing**:
+- **Mechanism:** Browsers batch DOM mutations and defer layout calculations until the end of the frame. When JavaScript writes to the DOM (`style.height = 'auto'`) and immediately reads a layout property (`element.scrollHeight`), it invalidates the render tree and forces the browser to synchronously recalculate the entire page layout on the main thread before returning the value.
+- **Keystroke Latency:** Executing write-read-write cycles on every keystroke blocks the main thread, leading to dropped frames, input lag, and poor Interaction to Next Paint (INP) scores—especially if multiple textareas or complex ancestor DOM trees must be recalculated.
+- **Mitigation Strategies:**
+  1. **Batching with `requestAnimationFrame`**: Schedule measurements during the browser's animation frame or use microtasks to decouple continuous resize reads from high-frequency typing events.
+  2. **CSS-Only Field Sizing (Modern Standard)**: The modern CSS property `field-sizing: content` enables form controls (including textareas and inputs) to automatically adjust their dimensions to match their content natively in browser layout engines, completely eliminating JavaScript listeners, DOM reads, and layout thrashing.
+  3. **CSS Grid Mirror Trick**: Placing a hidden `<span>` replicating the textarea's text and the `<textarea>` in the identical CSS Grid cell (`grid-area: 1 / 1 / 2 / 2`). The grid cell expands to fit the `<span>`'s content automatically, and the textarea expands via `height: 100%` without any manual DOM measurement.
+
+**Interview answer:** "Interleaving inline height modifications with `scrollHeight` reads causes forced synchronous reflow and layout thrashing, which degrades input responsiveness. To eliminate this overhead, developers can batch measurements using `requestAnimationFrame` or adopt modern CSS solutions like `field-sizing: content` or grid-based mirroring to offload resizing entirely to the browser engine."
