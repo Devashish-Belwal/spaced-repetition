@@ -571,9 +571,14 @@
     try {
       const res = await fetch('/api/status');
       if (res.ok) {
+        const statusData = await res.json();
         isServerConnected = true;
         els.syncDot.style.backgroundColor = '#10b981';
-        els.syncText.textContent = 'Connected to local data.csv';
+        if (statusData.db === 'neon') {
+          els.syncText.textContent = `🟢 Connected to Neon Database (${statusData.total_cards || 0} cards)`;
+        } else {
+          els.syncText.textContent = 'Connected to local data.csv';
+        }
 
         // Load settings from server if available
         const sRes = await fetch('/api/settings');

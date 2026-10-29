@@ -1,0 +1,26 @@
+{
+  "name": "spaced-repetition",
+  "version": "1.0.0",
+  "description": "A responsive, high-performance HTML/CSS/JavaScript Spaced Repetition application for revising **3,500 Software Developer Interview Questions & Answers**.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Devashish-Belwal/spaced-repetition.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Devashish-Belwal/spaced-repetition/issues"
+  },
+  "homepage": "https://github.com/Devashish-Belwal/spaced-repetition#readme",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "dotenv": "^18.0.9"
+  }
+}

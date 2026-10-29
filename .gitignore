@@ -1,3 +1,6 @@
+# Dependencies
+node_modules/
+
 # Local API Keys & Secrets
 openrouter_keys.txt
 api_keys.txt
